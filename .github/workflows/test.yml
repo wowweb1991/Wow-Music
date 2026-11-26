@@ -1,0 +1,16 @@
+name: WOW MUSIC checks
+on:
+  pull_request:
+  push:
+    branches:
+      - feature/supabase-platform-foundation
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check js/app.js
+      - run: node --test tests/smoke.test.mjs
