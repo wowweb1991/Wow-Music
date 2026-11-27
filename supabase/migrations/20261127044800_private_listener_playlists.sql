@@ -1,0 +1,11 @@
+create table public.playlists (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade default auth.uid(), name text not null check (char_length(trim(name)) between 1 and 100), created_at timestamptz not null default now());
+create table public.playlist_tracks (playlist_id uuid not null references public.playlists(id) on delete cascade, track_id uuid not null references public.tracks(id) on delete cascade, added_at timestamptz not null default now(), primary key(playlist_id,track_id));
+alter table public.playlists enable row level security;
+alter table public.playlist_tracks enable row level security;
+create policy playlist_owner on public.playlists for all to authenticated using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy playlist_items_read on public.playlist_tracks for select to authenticated using (exists(select 1 from public.playlists p where p.id=playlist_id and p.user_id=auth.uid()));
+create policy playlist_items_add on public.playlist_tracks for insert to authenticated with check (exists(select 1 from public.playlists p where p.id=playlist_id and p.user_id=auth.uid()) and exists(select 1 from public.tracks t where t.id=track_id and t.published and t.rights_confirmed));
+create policy playlist_items_remove on public.playlist_tracks for delete to authenticated using (exists(select 1 from public.playlists p where p.id=playlist_id and p.user_id=auth.uid()));
+revoke all on public.playlists,public.playlist_tracks from anon;
+grant select,insert,update,delete on public.playlists to authenticated;
+grant select,insert,delete on public.playlist_tracks to authenticated;
