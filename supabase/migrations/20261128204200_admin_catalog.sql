@@ -1,0 +1,13 @@
+begin;
+drop policy if exists track_insert on public.tracks;
+drop policy if exists track_update on public.tracks;
+drop policy if exists track_delete on public.tracks;
+drop policy if exists track_read on public.tracks;
+create policy track_admin_write on public.tracks for all to authenticated using (((auth.jwt()->'app_metadata'->>'wow_admin') = 'true')) with check (((auth.jwt()->'app_metadata'->>'wow_admin') = 'true'));
+create policy track_authorized_read on public.tracks for select to anon, authenticated using (published and rights_confirmed);
+drop policy if exists wow_audio_insert on storage.objects;
+drop policy if exists wow_audio_delete on storage.objects;
+drop policy if exists wow_audio_read on storage.objects;
+create policy wow_audio_admin on storage.objects for all to authenticated using (bucket_id='wow-audio' and ((auth.jwt()->'app_metadata'->>'wow_admin') = 'true')) with check (bucket_id='wow-audio' and ((auth.jwt()->'app_metadata'->>'wow_admin') = 'true'));
+create policy wow_audio_authorized_read on storage.objects for select to anon, authenticated using (bucket_id='wow-audio' and exists (select 1 from public.tracks t where t.object_path=objects.name and t.published and t.rights_confirmed));
+commit;
